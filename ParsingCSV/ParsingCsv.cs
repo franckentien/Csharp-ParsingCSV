@@ -7,23 +7,27 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace ParsingCSV
 {
-    using System;
+    using System.Diagnostics;
     using System.IO;
-    
+
     /// <summary>
     /// The parsing csv.
     /// </summary>
-    public class ParsingCsv
+    public static class ParsingCsv
     {
         /// <summary>
         /// The path.
         /// </summary>
         private static readonly string Path = Directory.GetCurrentDirectory();
 
-        private static int nbValueLine;
-
+        private static int _nbLine;
+        private static int _nbValueLine;
+        private static string [,] _matrice;
 
         /// <summary>
         /// The main.
@@ -34,7 +38,7 @@ namespace ParsingCSV
         public static void Main(string[] args)
         {
             ReadCsv("sample.csv");
-            Console.ReadLine();
+            WriteCsv();
         }
 
         /// <summary>
@@ -45,27 +49,34 @@ namespace ParsingCSV
         /// </param>
         private static void ReadCsv(string fileName)
         {
-  
             // get file content
-            string[] lines = System.IO.File.ReadAllLines(Path + "/" + fileName, System.Text.Encoding.GetEncoding("iso-8859-1"));
+            var lines = File.ReadAllLines(Path + "/" + fileName,System.Text.Encoding.GetEncoding("iso-8859-1"));
+            _nbLine = lines.Length;
 
-            Checkfile(lines);
-
-
-            // display file content in console for test.
-            foreach (var line in lines)
+            if (Checkfile(lines))
             {
-                var values = line.Split(';');
+                Debug.WriteLine("OK");
+            }
+            else
+            {
+                Debug.WriteLine("KO");
+                throw new InvalidDataException("Bad file structure");
+            }
 
-                //Console.WriteLine("New line");
+            _matrice = new string[_nbLine,_nbValueLine];
 
-                foreach (var value in values)
+            for (var i = 0; i < _nbLine; i++)
+            {
+                //Console.WriteLine(lines[i]);
+                var values = lines[i].Split(';');
+                for (var j = 0; j < _nbValueLine; j++)
                 {
-                    //Console.WriteLine("Value: ");
-                    //Console.WriteLine(value);
+                    _matrice[i, j] = values[j];
                 }
             }
         }
+
+        
 
         /// <summary>
         /// check if all line have the same number of value
@@ -73,23 +84,12 @@ namespace ParsingCSV
         /// <returns>
         /// The <see cref="bool"/>.
         /// </returns>
-        private static bool Checkfile(string [] lines)
+        private static bool Checkfile(IReadOnlyList<string> lines)
         {
-
             var splitedLine = lines[0].Split(';');
-            nbValueLine = splitedLine.Length;
+            _nbValueLine = splitedLine.Length;
 
-            foreach (var line in lines)
-            {
-                var values = line.Split(';');
-
-                foreach (var value in values)
-                {
-                    //TODO Check the number of value and return true or false 
-                }
-            }
-
-            return false;
+            return lines.Select(line => line.Split(';')).All(values => _nbValueLine == values.Length);
         }
 
         /// <summary>
@@ -97,7 +97,25 @@ namespace ParsingCSV
         /// </summary>
         private static void WriteCsv()
         {
+            File.WriteAllText("output.csv", "");
 
+            for (var i = 0; i < _nbLine; i++)
+            {
+
+                for (var j = 0; j < _nbValueLine; j++)
+                {
+                    if (_matrice[i, j] == null) continue;
+                    if (_matrice[i, j] != "")
+                    {
+                        File.AppendAllText("output.csv", _matrice[i, j] );
+                        if (j != _nbValueLine-1)
+                        {
+                            File.AppendAllText("output.csv", ";");
+                        }
+                    }
+                }
+                File.AppendAllText("output.csv", "\n");
+            }
         }
     }
 }
